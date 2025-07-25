@@ -22,8 +22,12 @@ const userSchema = new mongoose.Schema({
     isVerified: {
         type: Boolean,
         default: false
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
     }
 }, { timestamps: true }); // Adds createdAt and updatedAt timestamps
 
 export default mongoose.model('User', userSchema);
-

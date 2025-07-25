@@ -23,9 +23,9 @@ const productSchema = new Schema({
     },
     brand: {
         type: String,
-        required: true,
         trim: true,
-        index: true // Index for faster brand-based queries
+        index: true,
+        default: 'YOUR_BRAND_NAME' // Set your brand name here
     },
     specs: {
         type: specsSchema,
@@ -36,7 +36,39 @@ const productSchema = new Schema({
         trim: true
     },
     price: { type: Number, required: true, min: 0 },
-    tags: [String]
+    tags: [String],
+    stock: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+    },
+    averageRating: {
+        type: Number,
+        min: 0,
+        max: 5,
+        default: 0,
+        set: (val) => Math.round(val * 10) / 10 // Rounds to one decimal place
+    },
+    numReviews: {
+        type: Number,
+        min: 0,
+        default: 0
+    }
 }, { timestamps: true });
+
+productSchema.index({
+    name: 'text',
+    description: 'text',
+    brand: 'text',
+    category: 'text',
+    tags: 'text'
+}, {
+    weights: {
+        name: 10,
+        brand: 5
+    },
+    name: 'ProductTextSearchIndex'
+});
 
 export default model('Product', productSchema);

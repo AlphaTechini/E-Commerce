@@ -41,32 +41,38 @@ export default async function (fastify, opts) {
                      "Incorrect Credentials"});
             }
 
-            // --- Cart Merging Logic ---
+            // --- Cart Merging Logic --- //
+            // This is where I handle the case where a guest with items in their cart logs in.
             const guestCartId = req.headers['x-cart-id'];
             if (guestCartId) {
+                // I need to find both the guest's cart (using the ID from the header)
+                // and check if the user already has a cart saved to their account.
                 const guestCart = await Cart.findById(guestCartId);
                 const userCart = await Cart.findOne({ userId: user._id });
 
                 if (guestCart) {
                     if (userCart) {
-                        // Scenario 1: User has an existing cart, merge guest cart into it.
+                        // Scenario 1: The user already has a cart. I need to merge the guest's items into it.
                         for (const guestItem of guestCart.items) {
+                            // Check if the user's cart already has this specific product.
                             const userItem = userCart.items.find(item => 
                                 item.productId.equals(guestItem.productId)
                             );
 
                             if (userItem) {
-                                // Item exists, update quantity
+                                // If it exists, I'll just add the quantities together.
                                 userItem.quantity += guestItem.quantity;
                             } else {
-                                // New item, add to user's cart
+                                // If it's a new item, I'll push it into the user's cart array.
                                 userCart.items.push(guestItem);
                             }
                         }
                         await userCart.save();
-                        await Cart.findByIdAndDelete(guestCartId); // Clean up the guest cart
+                        // Now that everything is merged, I can delete the old guest cart to keep the database clean.
+                        await Cart.findByIdAndDelete(guestCartId);
                     } else {
-                        // Scenario 2: User has no cart, assign the guest cart to them.
+                        // Scenario 2: The user doesn't have a cart yet. This is the easy case.
+                        // I can just "claim" the guest cart for the user by assigning their userId to it.
                         guestCart.userId = user._id;
                         await guestCart.save();
                     }
@@ -74,7 +80,7 @@ export default async function (fastify, opts) {
             }
 
             const token = fastify.jwt.sign(
-                { userId: user._id, username: user.username },
+                { userId: user._id, username: user.username, role: user.role },
                 {expiresIn: "1h"}
             );
             return reply.code(200).send({

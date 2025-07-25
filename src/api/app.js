@@ -12,6 +12,10 @@ import routes from './routes/index.js';
 import cartRoutes from './routes/cart/index.js';
 import productRoutes from './routes/products/index.js';
 import orderRoutes from './routes/orders/index.js';
+import adminLoginRoutes from './routes/admin/login.js';
+import adminOrderRoutes from './routes/admin/order.js';
+import adminProtectedRoutes from './routes/admin/index.js';
+import reviewRoutes from './routes/Reviews/index.js';
 import mailerPlugin from './plugins/mailer.js';
 import redisPingPlugin from './config/plugin/Redisping.js';
 
@@ -73,6 +77,21 @@ app.after(async (err) => {
         secret: app.config.JWT_KEY
     });
 
+    // Decorate the instance with an authentication hook for admin users
+    app.decorate('verifyAdmin', async function (request, reply) {
+        try {
+            // First, ensure the user is authenticated
+            await request.jwtVerify();
+            // Then, check if the authenticated user is an admin
+            if (request.user.role !== 'admin') {
+                return reply.code(403).send({ error: 'Forbidden: Admin access required.' });
+            }
+        } catch (err) {
+            // This will catch errors from jwtVerify (e.g., no token, invalid token)
+            return reply.code(401).send(err);
+        }
+    });
+
     // Register mailer plugin
     app.register(mailerPlugin);
 
@@ -91,6 +110,10 @@ app.after(async (err) => {
     app.register(cartRoutes, { prefix: '/api' });
     app.register(productRoutes, { prefix: '/api' });
     app.register(orderRoutes, { prefix: '/api/orders' });
+    app.register(adminLoginRoutes, { prefix: '/api/admin' });
+    app.register(adminOrderRoutes, { prefix: '/api/admin' });
+    app.register(adminProtectedRoutes, { prefix: '/api/admin' });
+    app.register(reviewRoutes, { prefix: '/api' });
 });
 
 app.register(cors);
