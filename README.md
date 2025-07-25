@@ -106,15 +106,7 @@ The project follows a feature-based, scalable structure for a Fastify API:
 
 *(This section will be updated with detailed API documentation as endpoints are developed. It will include information on request/response formats, required parameters, and authentication.)*
 
-## Roadmap & Future Goals
+## Future Goals
 
-This is the initial plan for the project's features. This list will grow and change as development progresses.
-
--   [ ] **User Authentication:** User registration, login, and JWT-based session management.
--   [ ] **Product Management:** Full CRUD operations for products, including categories and search.
--   [ ] **Shopping Cart:** Add, update, and remove items from the cart.
--   [ ] **Order Management:** Create orders from the cart and view order history.
-
----
 
 This README will be updated as the project moves closer to completion!
