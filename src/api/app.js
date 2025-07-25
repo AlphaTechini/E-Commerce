@@ -15,8 +15,8 @@ import orderRoutes from './routes/orders/index.js';
 import adminLoginRoutes from './routes/admin/login.js';
 import adminOrderRoutes from './routes/admin/order.js';
 import adminProtectedRoutes from './routes/admin/index.js';
-import reviewRoutes from './routes/Reviews/index.js';
-import mailerPlugin from './plugins/mailer.js';
+import reviewRoutes from './routes/reviews/index.js';
+import mailerPlugin from './config/plugin/mailer.js';
 import redisPingPlugin from './config/plugin/Redisping.js';
 
 //Initialize fastify

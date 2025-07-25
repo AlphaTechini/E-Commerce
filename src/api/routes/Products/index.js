@@ -47,7 +47,6 @@ export default async function (fastify, opts) {
         }
     });
 
-    // Get a single product by ID
     fastify.get('/products/:id', async (request, reply) => {
         try {
             const product = await Product.findById(request.params.id);

@@ -1,12 +1,12 @@
 # E-Commerce API
 
-This is the beginning of a new E-Commerce backend project. I'm building it to be modern, fast, and scalable using Node.js and Fastify.
+This is a modern, fast, and scalable E-Commerce backend built with Node.js and Fastify.
 
 > **Developer's Note:** This project is currently in its early stages. I'll be committing changes and adding features regularly. The structure and documentation will evolve as the project grows.
 
 ## Core Technologies
 
-I'm building this project with a modern and robust set of technologies to ensure performance and security:
+This project is built with a modern and robust set of technologies to ensure performance, security, and a great developer experience:
 
 *   **Backend:** [Node.js](https://nodejs.org/)
 *   **Framework:** [Fastify](https://www.fastify.io/) - for its high performance and low overhead.
@@ -14,11 +14,13 @@ I'm building this project with a modern and robust set of technologies to ensure
 *   **Authentication:** [JSON Web Tokens (JWT)](https://jwt.io/) using `@fastify/jwt` for secure, stateless authentication.
 *   **Security:**
 *   Password hashing with `argon2` for its strong, modern, and configurable hashing algorithm.
-    *   Essential security headers via `@fastify/helmet`.
-    *   Cross-Origin Resource Sharing (CORS) managed by `@fastify/cors`.
-    *   Rate limiting to prevent abuse, using `@fastify/rate-limit`.
+*   Essential security headers via `@fastify/helmet`.
+*   Cross-Origin Resource Sharing (CORS) managed by `@fastify/cors`.
+*   Rate limiting to prevent abuse, using `@fastify/rate-limit` with Redis.
+*   **Email:** Email verification and notifications using Nodemailer.
+*   **Caching & Temporary Storage:** Redis for rate limiting and temporary user data during email verification.
 *   **Development:**
-    *   `nodemon` for automatic server restarts during development, making the workflow smoother.
+*   `nodemon` for automatic server restarts during development, making the workflow smoother.
 
 ## Getting Started
 
@@ -27,9 +29,10 @@ To get a local copy up and running, follow these simple steps.
 ### Prerequisites
 
 You'll need to have these installed on your machine:
-*   Node.js (v18 or higher is recommended)
+*   Node.js (v20 or higher is recommended)
 *   npm (or your preferred package manager like yarn or pnpm)
 *   A running MongoDB instance (local or cloud)
+*   A running Redis instance (local or cloud)
 
 ### Installation & Setup
 
@@ -48,10 +51,28 @@ You'll need to have these installed on your machine:
     Create a `.env` file in the root of the project. The application uses `@fastify/env` to load these variables, so they are essential for configuration.
 
     Here's an example `.env` file to get you started:
-    ```env
+    ```ini
     PORT=3000
-    MONGODB_URI=mongodb://localhost:27017/ecommerce
-    JWT_SECRET=aVeryStrongAndSecretKeyThatYouShouldChange
+    APP_URL=http://localhost:3000
+
+    # Database
+    MONGO_URI=mongodb://localhost:27017/ecommerce
+    REDIS_HOST=127.0.0.1
+    REDIS_PORT=6379
+    REDIS_KEY=your-redis-password
+
+    # Security
+    JWT_KEY=aVeryStrongAndSecretKeyThatYouShouldChange
+    ARGON2_MEMORY_COST=65536
+    ARGON2_TIME_COST=3
+    ARGON2_PARALLELISM=4
+
+    # Email (e.g., using Gmail for development)
+    SMTP_HOST=smtp.gmail.com
+    SMTP_PORT=587
+    SMTP_USER=your.email@gmail.com
+    SMTP_PASS=your-google-app-password
+    SMTP_FROM="Your Store <your.email@gmail.com>"
     ```
 
 4.  **Run the development server:**
@@ -59,13 +80,13 @@ You'll need to have these installed on your machine:
     ```bash
     npm run dev
     ```
-    The server should now be running on `http://localhost:3000` (or whatever port you specified in your `.env` file).
+    The server should now be running on `http://localhost:3000` (or the port you specified).
 
 ---
 
 ## Project Structure
 
-The project follows a standard, scalable structure for a Node.js API:
+The project follows a feature-based, scalable structure for a Fastify API:
 
 ```
 /
