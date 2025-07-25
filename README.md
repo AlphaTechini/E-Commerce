@@ -96,4 +96,4 @@ This is the initial plan for the project's features. This list will grow and cha
 
 ---
 
-**Reminder to self:** Keep this README updated as the project moves closer to completion!
+This README will be updated as the project moves closer to completion!
