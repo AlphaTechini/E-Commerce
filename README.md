@@ -106,7 +106,5 @@ The project follows a feature-based, scalable structure for a Fastify API:
 
 *(This section will be updated with detailed API documentation as endpoints are developed. It will include information on request/response formats, required parameters, and authentication.)*
 
-## Future Goals
-
 
 This README will be updated as the project moves closer to completion!
