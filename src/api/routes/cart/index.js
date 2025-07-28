@@ -1,9 +1,9 @@
 import Cart from '../../models/Cart.js';
-import Product from '../../models/Product.js'; // Assuming a Product model exists
+import Product from '../../models/Product.js';
 
 export default async function (fastify, opts) {
 
-    // This onRequest hook is for "optional authentication". I'll try to verify a JWT if one is sent.
+    // This onRequest hook is for "optional authentication". It will try to verify a JWT if one is sent.
     // If it's a valid token, `request.user` will be populated.
     // If there's no token or it's invalid, I'll just ignore the error and treat them as a guest.
     // This is perfect for features like the cart that should work for everyone.
@@ -15,7 +15,7 @@ export default async function (fastify, opts) {
 
     // This preHandler hook runs after the optional authentication. Its job is to find and
     // attach the user's cart to the request object, so I don't have to repeat this logic in every route.
-    fastify.addHook('preHandler', async (request, reply) => {
+    fastify.addHook('preHandler', async (request) => {
         if (request.user) {
             // If the user is logged in (meaning jwtVerify succeeded), I'll find their cart using their userId.
             request.cart = await Cart.findOne({ userId: request.user.userId });
@@ -32,7 +32,7 @@ export default async function (fastify, opts) {
         }
     });
 
-    fastify.get('/cart', async (request, reply) => {
+    fastify.get('/cart', async (request) => {
         // If a cart was found in the preHandler, return it.
         // The preHandler already did all the hard work of finding the cart.
         if (request.cart) {
@@ -40,7 +40,8 @@ export default async function (fastify, opts) {
         }
 
         // If no cart exists for the user yet, just return an empty cart structure.
-        return { items: [] };
+        // This ensures the frontend always gets a consistent response shape.
+        return { items: [], totalPrice: 0 };
     });
 
     const addItemSchema = {
@@ -48,7 +49,7 @@ export default async function (fastify, opts) {
             type: 'object',
             required: ['productId', 'quantity'],
             properties: {
-                productId: { type: 'string' }, // Assuming MongoDB ObjectId as string
+                productId: { type: 'string', pattern: '^[0-9a-fA-F]{24}$' },
                 quantity: { type: 'number', minimum: 1 }
             }
         }
@@ -58,7 +59,7 @@ export default async function (fastify, opts) {
         const { productId, quantity } = request.body;
         let cart = request.cart;
 
-        // Optional: Check if product exists and is in stock
+        // It's good practice to validate that the product exists before adding it to the cart.
         const product = await Product.findById(productId);
         if (!product) {
             return reply.code(404).send({ error: 'Product not found' });
@@ -151,18 +152,22 @@ export default async function (fastify, opts) {
             return reply.code(404).send({ error: 'Cart not found.' });
         }
 
-        const initialLength = cart.items.length;
-        // The easiest way to "remove" an item from a Mongoose subdocument array is to just
-        // filter it out and reassign the array.
-        cart.items = cart.items.filter(item => item.productId.toString() !== productId);
+        // To improve performance and ensure atomicity, we use MongoDB's $pull operator.
+        // This tells the database to directly remove the item from the array that matches
+        // our condition, without us having to fetch and resave the whole document.
+        const result = await Cart.updateOne(
+            { _id: cart._id },
+            { $pull: { items: { productId: productId } } }
+        );
 
-        // A simple check to see if the filter actually removed anything.
-        if (cart.items.length === initialLength) {
+        // The `modifiedCount` property from the update result tells us if a document was changed.
+        // If it's 0, it means no item with that productId was found in the cart.
+        if (result.modifiedCount === 0) {
             return reply.code(404).send({ error: 'Item not found in cart.' });
         }
 
-        await cart.save();
-
-        return cart;
+        // Fetch the updated cart to return the latest state to the client.
+        const updatedCart = await Cart.findById(cart._id);
+        return updatedCart;
     });
 }

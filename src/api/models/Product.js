@@ -66,7 +66,7 @@ productSchema.index({
 }, {
     weights: {
         name: 10,
-        brand: 5
+        brand: 5 //useful only if you have many brands
     },
     name: 'ProductTextSearchIndex'
 });

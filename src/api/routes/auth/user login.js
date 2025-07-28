@@ -80,7 +80,7 @@ export default async function (fastify, opts) {
             }
 
             const token = fastify.jwt.sign(
-                { userId: user._id, username: user.username, role: user.role },
+                { userId: user._id, username: user.username},
                 {expiresIn: "1h"}
             );
             return reply.code(200).send({

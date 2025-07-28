@@ -28,7 +28,7 @@ export default async function (fastify, opts) {
                 userId,
                 'items.productId': productId,
                 // Optional: only allow reviews for delivered orders
-                // status: 'delivered' 
+                status: 'delivered' 
             });
 
             if (!hasPurchased) {

@@ -29,7 +29,7 @@ const envSchema = {
     type: 'object',
     required: [ 'PORT', 'MONGO_URI', 'REDIS_KEY', 'REDIS_HOST', 'REDIS_PORT', 'JWT_KEY', 'APP_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM' ],
     properties: {
-        PORT: { type: 'string', default: '3000'},
+        PORT: { type: 'number', default: '3000'},
         MONGO_URI: { type: 'string'},
         REDIS_KEY: { type: 'string' },
         REDIS_HOST: { type: 'string' },
@@ -43,7 +43,8 @@ const envSchema = {
         SMTP_FROM: { type: 'string' },
         ARGON2_MEMORY_COST: { type: 'number'},
         ARGON2_TIME_COST: { type: 'number'},
-        ARGON2_PARALLELISM: { type: 'number'}
+        ARGON2_PARALLELISM: { type: 'number'},
+        ADMIN_ROUTE: { type: 'string'}
     }
 };
 
@@ -68,7 +69,7 @@ app.after(async (err) => {
         app.decorate('redis', redisClient);
         app.log.info('Redis connected successfully.');
     } catch (dbErr) {
-        app.log.error(dbErr, 'Database connection error');
+        app.log.error('Database connection error:', dbErr);
         process.exit(1);
     }
 
@@ -110,9 +111,9 @@ app.after(async (err) => {
     app.register(cartRoutes, { prefix: '/api' });
     app.register(productRoutes, { prefix: '/api' });
     app.register(orderRoutes, { prefix: '/api/orders' });
-    app.register(adminLoginRoutes, { prefix: '/api/admin' });
-    app.register(adminOrderRoutes, { prefix: '/api/admin' });
-    app.register(adminProtectedRoutes, { prefix: '/api/admin' });
+    app.register(adminLoginRoutes, { prefix: `/api/${app.config.ADMIN_ROUTE}` });
+    app.register(adminOrderRoutes, { prefix: `/api/${app.config.ADMIN_ROUTE}` });
+    app.register(adminProtectedRoutes, { prefix: `/api/${app.config.ADMIN_ROUTE}` });
     app.register(reviewRoutes, { prefix: '/api' });
 });
 

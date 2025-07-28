@@ -13,8 +13,10 @@ const cartItemSchema = new Schema({
         min: 1,
         default: 1
     }
-    // You might also store the price here at the time of adding
-    // to protect against price changes while the item is in the cart.
+    // Note: We don't store the price here. Storing the price would lead to
+    // data inconsistency if the product's price changes later. Instead, we
+    // use Mongoose's `populate()` feature to fetch the current product price
+    // when the cart is viewed.
 }, { _id: false }); // Don't create a separate _id for subdocuments
 
 const cartSchema = new Schema({
