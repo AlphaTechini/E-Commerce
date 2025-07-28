@@ -1,4 +1,6 @@
 import Fastify from 'fastify';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
@@ -6,16 +8,9 @@ import sensible from '@fastify/sensible';
 import auth from '@fastify/auth';
 import rateLimit from '@fastify/rate-limit';
 import fastifyEnv from '@fastify/env';
+import AutoLoad from '@fastify/autoload';
 
 import { connectMongo, connectRedis } from './config/database.js';
-import routes from './routes/index.js';
-import cartRoutes from './routes/cart/index.js';
-import productRoutes from './routes/products/index.js';
-import orderRoutes from './routes/orders/index.js';
-import adminLoginRoutes from './routes/admin/login.js';
-import adminOrderRoutes from './routes/admin/order.js';
-import adminProtectedRoutes from './routes/admin/index.js';
-import reviewRoutes from './routes/reviews/index.js';
 import mailerPlugin from './config/plugin/mailer.js';
 import redisPingPlugin from './config/plugin/Redisping.js';
 
@@ -24,7 +19,19 @@ const app = Fastify({
     logger: true
 });
 
-//Environment variables configuration
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// --- Plugin Registration ---
+// The order of registration is crucial for Fastify applications.
+
+// 1. Register essential utility plugins that have no dependencies on others.
+app.register(cors);
+app.register(helmet); // Important for security, should be registered early.
+app.register(sensible); // Provides useful http error utilities.
+app.register(auth); // Provides authentication hooks framework.
+
+// 2. Define the schema for environment variables.
 const envSchema = {
     type: 'object',
     required: [ 'PORT', 'MONGO_URI', 'REDIS_KEY', 'REDIS_HOST', 'REDIS_PORT', 'JWT_KEY', 'APP_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM' ],
@@ -48,13 +55,15 @@ const envSchema = {
     }
 };
 
+// 3. Register the environment variable plugin. It loads config needed by other plugins.
 app.register (fastifyEnv, {
     confKey: 'config',
     schema: envSchema,
     dotenv: true
 });
 
-// Use the `after` hook to ensure `fastify-env` has loaded the config
+// 4. Use the `after` hook to register plugins that depend on the loaded environment config.
+// This ensures `app.config` is available for all subsequent registrations.
 app.after(async (err) => {
     if (err) {
         app.log.error(err);
@@ -62,18 +71,18 @@ app.after(async (err) => {
     }
     try {
         // Connect to MongoDB
-        await connectMongo(app.config.MONGO_URI);
+        await connectMongo(app.config.MONGO_URI); // This could also be wrapped in a plugin.
         app.log.info('MongoDB connected successfully.');
         // Connect to Redis and decorate the fastify instance with the client
         const redisClient = await connectRedis(app.config);
         app.decorate('redis', redisClient);
         app.log.info('Redis connected successfully.');
     } catch (dbErr) {
-        app.log.error('Database connection error:', dbErr);
-        process.exit(1);
+        app.log.error({ err: dbErr }, 'Database connection failed. Server will not start.');
+        throw dbErr; // Let Fastify handle the startup failure gracefully.
     }
 
-    // Register JWT plugin using config
+    // Register JWT plugin, which depends on the JWT_KEY from config.
     app.register(jwt, {
         secret: app.config.JWT_KEY
     });
@@ -93,33 +102,24 @@ app.after(async (err) => {
         }
     });
 
-    // Register mailer plugin
-    app.register(mailerPlugin);
-
-    // Register Redis keep-alive pinger
-    app.register(redisPingPlugin);
-
-    // Register rate-limit plugin using Redis for a global limit
+    // Register rate-limit plugin, which depends on the Redis client.
     app.register(rateLimit, {
         max: 40, // max requests per timeWindow
         timeWindow: '1 minute',
-        redis: app.redis // use the redis client decorated to the fastify instance
+        redis: app.redis // Natively supported by @fastify/rate-limit with ioredis
     });
 
-    // Register routes after plugins and DB connections are set up
-    app.register(routes, { prefix: '/api' });
-    app.register(cartRoutes, { prefix: '/api' });
-    app.register(productRoutes, { prefix: '/api' });
-    app.register(orderRoutes, { prefix: '/api/orders' });
-    app.register(adminLoginRoutes, { prefix: `/api/${app.config.ADMIN_ROUTE}` });
-    app.register(adminOrderRoutes, { prefix: `/api/${app.config.ADMIN_ROUTE}` });
-    app.register(adminProtectedRoutes, { prefix: `/api/${app.config.ADMIN_ROUTE}` });
-    app.register(reviewRoutes, { prefix: '/api' });
-});
+    // Register other plugins that have dependencies on config or other plugins.
+    app.register(mailerPlugin); // Depends on 'env'
+    app.register(redisPingPlugin); // Depends on 'redis'
 
-app.register(cors);
-app.register(helmet);
-app.register(sensible);
-app.register(auth);
+    // 5. Automatically load all routes from the 'routes' directory.
+    // This should be done last so routes have access to all decorators and plugins.
+    app.register(AutoLoad, {
+        dir: path.join(__dirname, 'routes'),
+        options: { prefix: '/api' },
+        dirNameRoutePrefix: false // Prevents prefixing with directory names like '/products'
+    });
+});
 
 export default app;

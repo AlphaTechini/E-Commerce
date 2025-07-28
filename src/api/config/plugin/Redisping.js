@@ -13,6 +13,7 @@ const KEEPALIVE_KEY = 'keepalive:appPing';
  */
 async function redisPingPlugin(fastify, opts) {
   const { redis, log } = fastify;
+  let timeoutId = null; // To hold the timeout ID for cleanup
 
   // A recurring function that pings Redis and schedules the next ping.
   const pingAndReschedule = async () => {
@@ -24,7 +25,7 @@ async function redisPingPlugin(fastify, opts) {
       log.error(error, 'Failed to refresh Redis ping.');
     } finally {
       // Always schedule the next ping for the full interval.
-      setTimeout(pingAndReschedule, PING_INTERVAL_MS);
+      timeoutId = setTimeout(pingAndReschedule, PING_INTERVAL_MS);
     }
   };
 
@@ -54,12 +55,20 @@ async function redisPingPlugin(fastify, opts) {
     }
 
     // Schedule the first ping. Subsequent pings are handled by pingAndReschedule itself.
-    setTimeout(pingAndReschedule, initialDelay);
+    timeoutId = setTimeout(pingAndReschedule, initialDelay);
     log.info('Redis keep-alive pinger has been initialized.');
   };
 
   // Start the pinger initialization process.
   initializePinger();
+
+  // Add a hook to clean up the timer on server shutdown.
+  fastify.addHook('onClose', (instance, done) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    done();
+  });
 }
 
 export default fp(redisPingPlugin, {

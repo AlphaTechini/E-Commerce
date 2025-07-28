@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { createClient } from 'redis';
+import Redis from 'ioredis';
 
 // This file exports functions that handle connecting to my databases.
 // I'm keeping the connection logic separate from the main app setup for better organization.
@@ -13,24 +13,25 @@ async function connectMongo(uri) {
 
 // Redis connection function
 async function connectRedis(config) {
-    // I'm creating a new Redis client using the credentials from my .env file.
-    // The config object is passed in from app.js after it's been loaded.
-    const client = createClient({
-        username: 'default',
+    // ioredis uses a direct options object for configuration.
+    // It also handles reconnections automatically.
+    const client = new Redis({
+        port: config.REDIS_PORT,
+        host: config.REDIS_HOST,
         password: config.REDIS_KEY,
-        socket: {
-            host: config.REDIS_HOST,
-            port: config.REDIS_PORT,
-            connectTimeout: 5000
-        }
+        connectTimeout: 5000,
+        // It's good practice to prevent ioredis from endlessly retrying on a single command
+        // if the connection is down during that command.
+        maxRetriesPerRequest: null
     });
 
     // This is an event listener. If Redis has a connection error at any point while the app is running,
     // it will log it to the console.
     client.on('error', err => console.error('Redis Client Error', err));
-    await client.connect();
+    // ioredis connects lazily. We can ping to ensure the connection is live before proceeding.
+    await client.ping();
     return client;
 }
 
 // Export DB connections
-export { mongoose, connectMongo, connectRedis };
+export { connectMongo, connectRedis };
