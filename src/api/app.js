@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { fastify } from 'fastify';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from '@fastify/cors';
@@ -10,7 +10,8 @@ import rateLimit from '@fastify/rate-limit';
 import fastifyEnv from '@fastify/env';
 import AutoLoad from '@fastify/autoload';
 
-import { connectMongo, connectRedis } from './config/database.js';
+import redisPlugin from './config/plugin/redis.js';
+import mongoPlugin from './config/plugin/mongo.js';
 import mailerPlugin from './config/plugin/mailer.js';
 import redisPingPlugin from './config/plugin/Redisping.js';
 
@@ -36,7 +37,7 @@ const envSchema = {
     type: 'object',
     required: [ 'PORT', 'MONGO_URI', 'REDIS_KEY', 'REDIS_HOST', 'REDIS_PORT', 'JWT_KEY', 'APP_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM' ],
     properties: {
-        PORT: { type: 'number', default: '3000'},
+        PORT: { type: 'number', default: '8000'},
         MONGO_URI: { type: 'string'},
         REDIS_KEY: { type: 'string' },
         REDIS_HOST: { type: 'string' },
@@ -69,22 +70,20 @@ app.after(async (err) => {
         app.log.error(err);
         return;
     }
-    try {
-        // Connect to MongoDB
-        await connectMongo(app.config.MONGO_URI); // This could also be wrapped in a plugin.
-        app.log.info('MongoDB connected successfully.');
-        // Connect to Redis and decorate the fastify instance with the client
-        const redisClient = await connectRedis(app.config);
-        app.decorate('redis', redisClient);
-        app.log.info('Redis connected successfully.');
-    } catch (dbErr) {
-        app.log.error({ err: dbErr }, 'Database connection failed. Server will not start.');
-        throw dbErr; // Let Fastify handle the startup failure gracefully.
-    }
 
     // Register JWT plugin, which depends on the JWT_KEY from config.
     app.register(jwt, {
         secret: app.config.JWT_KEY
+    });
+
+    // Decorate the instance with a generic authentication hook for all logged-in users.
+    // This can be used on any route that requires a user to be authenticated.
+    app.decorate('verifyJWT', async function (request, reply) {
+        try {
+            await request.jwtVerify();
+        } catch (err) {
+            reply.send(err);
+        }
     });
 
     // Decorate the instance with an authentication hook for admin users
@@ -97,29 +96,34 @@ app.after(async (err) => {
                 return reply.code(403).send({ error: 'Forbidden: Admin access required.' });
             }
         } catch (err) {
-            // This will catch errors from jwtVerify (e.g., no token, invalid token)
-            return reply.code(401).send(err);
+            // Catch errors from jwtVerify (e.g., no token, invalid token) and send a generic response.
+            return reply.code(401).send({ error: 'Authentication required.' });
         }
     });
 
-    // Register rate-limit plugin, which depends on the Redis client.
+    // Register plugins that have dependencies.
+    // The 'redis' plugin MUST be registered before any plugin that depends on it.
+    // The 'mongo' plugin handles the MongoDB connection.
+    app.register(mongoPlugin);
+    app.register(redisPlugin);
+
+    // Register plugins that depend on the redis client being available.
     app.register(rateLimit, {
         max: 40, // max requests per timeWindow
         timeWindow: '1 minute',
         redis: app.redis // Natively supported by @fastify/rate-limit with ioredis
     });
+    app.register(redisPingPlugin); // Now this will find its 'redis' dependency.
 
-    // Register other plugins that have dependencies on config or other plugins.
+    // Register other independent plugins
     app.register(mailerPlugin); // Depends on 'env'
-    app.register(redisPingPlugin); // Depends on 'redis'
 
     // 5. Automatically load all routes from the 'routes' directory.
     // This should be done last so routes have access to all decorators and plugins.
     app.register(AutoLoad, {
         dir: path.join(__dirname, 'routes'),
         options: { prefix: '/api' },
-        dirNameRoutePrefix: false // Prevents prefixing with directory names like '/products'
+        dirNameRoutePrefix: false
     });
 });
-
 export default app;

@@ -1,5 +1,5 @@
-import Cart from '../../models/Cart.js';
-import Product from '../../models/Product.js';
+import Cart from '../models/Cart.js';
+import Product from '../models/Product.js';
 
 export default async function (fastify, opts) {
 

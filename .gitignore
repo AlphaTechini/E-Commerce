@@ -6,3 +6,6 @@
 
 # Logs
 *.log
+
+# Specific plugin files (not recommended for source code)
+/src/api/config/plugin/Redisping.js

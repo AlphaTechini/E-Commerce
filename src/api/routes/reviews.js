@@ -1,9 +1,9 @@
-import Review from '../../models/Review.js';
-import Order from '../../models/Order.js';
+import Review from '../models/Review.js';
+import Order from '../models/Order.js';
 
 export default async function (fastify, opts) {
     // All routes here require authentication
-    fastify.addHook('onRequest', fastify.authenticate);
+    fastify.addHook('onRequest', fastify.verifyJWT);
 
     const createReviewSchema = {
         body: {

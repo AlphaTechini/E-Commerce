@@ -1,5 +1,5 @@
-import Product from '../../models/Product.js';
-import Review from '../../models/Review.js';
+import Product from '../models/Product.js';
+import Review from '../models/Review.js';
 
 export default async function (fastify, opts) {
 

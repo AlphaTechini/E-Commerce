@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import Order from '../../models/Order.js';
-import Cart from '../../models/Cart.js';
-import Product from '../../models/Product.js';
+import Order from '../models/Order.js';
+import Cart from '../models/Cart.js';
+import Product from '../models/Product.js';
 
 export default async function (fastify, opts) {
 
     // All order routes must be authenticated
-    fastify.addHook('onRequest', fastify.authenticate);
+    fastify.addHook('onRequest', fastify.verifyJWT);
 
     // Route to place a new order (POST /api/orders)
     fastify.post('/', {

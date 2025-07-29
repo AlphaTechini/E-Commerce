@@ -9,7 +9,11 @@ const start = async () => {
         // Now that plugins are loaded, `app.config.PORT` is available.
         await app.listen({ port: app.config.PORT, host: '0.0.0.0' });
     } catch (err) {
-        app.log.error(err);
+        if (err.code === 'EADDRINUSE') {
+            app.log.error(`Port ${err.port} is already in use. Please stop the conflicting process or change the port.`);
+        } else {
+            app.log.error(err);
+        }
         process.exit(1);
     }
 };

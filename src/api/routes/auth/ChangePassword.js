@@ -23,12 +23,13 @@ export default async function (fastify, opts) {
     };
 
     fastify.post('/change-password', {
-        onRequest: [fastify.authenticate], // Ensure the user is authenticated
+        onRequest: [fastify.verifyJWT],
         schema: changePasswordSchema
     }, async (request, reply) => {
         try {
             const { oldPassword, newPassword, confirmNewPass } = request.body;
-            const { userId } = request.user; // Get user ID from JWT payload
+            // The verifyJWT hook attaches the user payload to the request.
+            const { userId } = request.user;
 
             const existingUser = await User.findById(userId);
             if (!existingUser) {
@@ -54,10 +55,9 @@ export default async function (fastify, opts) {
                 timeCost: fastify.config.ARGON2_TIME_COST,
                 parallelism: fastify.config.ARGON2_PARALLELISM,
             });
-            await User.findOneAndUpdate(
+            await User.updateOne(
              { _id: userId },
-             {password: newHashedPassword}
-            );
+             { $set: { password: newHashedPassword } });
             return reply.send({ message: "Password updated successfully." });
         } catch (error) {
           fastify.log.error(error, "Password update failure");
