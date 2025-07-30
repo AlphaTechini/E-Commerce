@@ -12,6 +12,7 @@
     "@fastify/sensible": "^6.0.3",
     "argon2": "^0.43.1",
     "fastify": "^5.3.3",
+    "fastify-raw-body": "^5.0.0",
     "ioredis": "^5.6.1",
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.1",
