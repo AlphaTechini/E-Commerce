@@ -1,12 +1,21 @@
 # E-Commerce API
 
-This is a modern, fast, and scalable E-Commerce backend built with Node.js and Fastify.
+This is a high-performance, secure, and scalable E-Commerce backend built with Node.js and Fastify. It provides all the foundational features required for a modern online store, from user authentication to order processing.
 
-> **Developer's Note:** This project is currently in its early stages. I'll be committing changes and adding features regularly. The structure and documentation will evolve as the project grows.
+## Key Features
 
-## Core Technologies
+*   **High-Performance & Scalable:** Built on [Fastify](https://www.fastify.io/), one of the fastest Node.js frameworks available. It's designed to handle high traffic with minimal overhead, ensuring a smooth user experience.
+*   **Secure by Design:** Security is a top priority. The API includes:
+    *   Stateless authentication with **JSON Web Tokens (JWT)**.
+    *   Strong password hashing using **Argon2**.
+    *   Essential security headers via **`@fastify/helmet`**.
+    *   Protection against abuse with **CORS** and **rate-limiting**.
+*   **Complete E-commerce Workflow:** The core logic for user registration, product management, cart functionality, and order placement is ready to go.
+*   **Payment Integration:** Includes a Stripe integration for processing payments, a critical component for any real-world e-commerce platform.
+*   **Transactional Emails:** Uses Nodemailer for sending automated emails like order confirmations, keeping customers informed.
+*   **Optimized for Performance:** Leverages an in-memory Redis cache for efficient rate-limiting and temporary data storage, reducing database load.
 
-This project is built with a modern and robust set of technologies to ensure performance, security, and a great developer experience:
+## Technology Stack
 
 *   **Backend:** [Node.js](https://nodejs.org/)
 *   **Framework:** [Fastify](https://www.fastify.io/) - for its high performance and low overhead.
@@ -18,7 +27,7 @@ This project is built with a modern and robust set of technologies to ensure per
 *   Cross-Origin Resource Sharing (CORS) managed by `@fastify/cors`.
 *   Rate limiting to prevent abuse, using `@fastify/rate-limit` with Redis.
 *   **Email:** Email verification and notifications using Nodemailer.
-*   **Caching & Temporary Storage:** Redis for rate limiting and temporary user data during email verification.
+*   **Caching & In-Memory Storage:** Redis for rate limiting and temporary user data during email verification.
 *   **Development:**
 *   `nodemon` for automatic server restarts during development, making the workflow smoother.
 
@@ -38,7 +47,7 @@ You'll need to have these installed on your machine:
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/AlphaTechini/E-Commerce.git
     cd E-Commerce
     ```
 
@@ -104,7 +113,4 @@ The project follows a feature-based, scalable structure for a Fastify API:
 
 ## API Endpoints
 
-*(This section will be updated with detailed API documentation as endpoints are developed. It will include information on request/response formats, required parameters, and authentication.)*
-
-
-This README will be updated as the project moves closer to completion!
+The API provides a full suite of endpoints for managing users, products, carts, and orders. For the next steps, I plan to document these endpoints using a tool like Swagger or Postman to make them easy to test and integrate with a frontend.
