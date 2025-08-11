@@ -1,4 +1,4 @@
-import Fastify, { fastify } from 'fastify';
+import Fastify from 'fastify';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from '@fastify/cors';
@@ -41,7 +41,7 @@ const envSchema = {
         MONGO_URI: { type: 'string'},
         REDIS_KEY: { type: 'string' },
         REDIS_HOST: { type: 'string' },
-        REDIS_PORT: { type: 'string' },
+        REDIS_PORT: { type: 'number' },
         JWT_KEY: { type: 'string' },
         APP_URL: { type: 'string' },
         SMTP_HOST: { type: 'string' },
@@ -57,10 +57,12 @@ const envSchema = {
 };
 
 // 3. Register the environment variable plugin. It loads config needed by other plugins.
-app.register (fastifyEnv, {
+app.register(fastifyEnv, {
     confKey: 'config',
     schema: envSchema,
-    dotenv: true
+    dotenv: {
+        path: path.join(__dirname, '../../.env')
+    }
 });
 
 // 4. Use the `after` hook to register plugins that depend on the loaded environment config.
